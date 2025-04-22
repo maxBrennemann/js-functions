@@ -15,7 +15,7 @@ const NotificationManager = (function () {
             this.#twPrefix = twPrefix;
         }
 
-        notify(info, type, details, duration, onClose, persist) {
+        notify(info, type, details, duration, onClose, persist, id) {
             const key = JSON.stringify({ info, type, details });
             if (!this.#notificationKeys.has(key)) {
                 this.#notificationKeys.add(key);
@@ -56,6 +56,22 @@ const NotificationManager = (function () {
                     copySpan.appendChild(btn);
                 }
             }
+
+            if (id) {
+                this.#notificationElements.set(id, element);
+            }
+        }
+
+        replace = (id, info, type, details, duration, onClose, persist) => {
+            const old = this.#notificationElements.get(id);
+            if (!old) return;
+
+            old.classList.add(`${this.#twPrefix}opacity-0`, `${this.#twPrefix}transition-opacity`);
+            setTimeout(() => {
+                old?.remove();
+            }, 300);
+
+            this.notify(info, type, details, duration, onClose, persist);
         }
 
         notificationHTML = (info, type) => {
@@ -228,9 +244,13 @@ export const setTwPrefix = (twPrefix) => {
 }
 
 export const notification = (info, type = "warning", details = "", duration = 5000, onClose = () => { }, persist = false) => {
-    NotificationManager.notify(info, type, details, duration, onClose, persist);
+    NotificationManager.notify(info, type, details, duration, onClose, persist, null);
 }
 
-export const notificationLoader = (info, details, onClose = () => { }) => {
-    NotificationManager.notify(info, "loading", details, duraction, onClose, true);
+export const notificationLoader = (id, info, details, onClose = () => { }) => {
+    NotificationManager.notify(info, "loading", details, 0, onClose, true, id);
+}
+
+export const notificatinReplace = (id, info, type, details = "", duration = 5000, onClose = () => {}, persist = false) => {
+    NotificationManager.replace(id, info, type, details, duration, onClose, persist);
 }
