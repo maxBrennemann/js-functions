@@ -5,6 +5,7 @@ const NotificationManager = (function () {
         constructor() {
             if (instance) return instance;
 
+            this.notifications = new WeakSet();
             this.twPrefix = "";
 
             instance = this;
@@ -14,8 +15,23 @@ const NotificationManager = (function () {
             this.twPrefix = twPrefix;
         }
 
-        notify(info, type, details, onClose) {
-            const notification = this.notificationHTML(info, details, type);
+        notify(info, type, details, duration, onClose, persistFailure) {
+            const notificationMarkup = {
+                "info": info,
+                "type": type,
+                "details": details,
+                "duration": duration,
+                "onClose": onClose,
+                "persistFailure": persistFailure,
+            };
+
+            if (this.notifications.has(notificationMarkup)) {
+                //
+            } else {
+                this.notifications.add(notificationMarkup);
+            }
+
+            const notification = this.notificationHTML(info, type);
 
             if (notification == null) {
                 return;
@@ -27,36 +43,55 @@ const NotificationManager = (function () {
             const element = template.content.firstElementChild;
             const notificationContainer = this.#getNotificationContainer();
             notificationContainer.appendChild(element);
-        
+
             const removeNotificationHandler = () => {
-                this.#removeNotification(element, onClose);
+                this.#removeNotification(element, onClose, type, details);
             };
 
-            setTimeout(removeNotificationHandler, 5000);
+            const shouldAutoDismiss = type !== "failure" || (type === "failure" && !persistFailure);
+            if (shouldAutoDismiss) {
+                const timeout = type === "failure" ? 20000 : duration;
+                setTimeout(removeNotificationHandler, timeout);
+            }
 
             const removeBtn = element.querySelector(".removeBtn");
             if (removeBtn) {
                 removeBtn.addEventListener("click", removeNotificationHandler);
             }
+
+            const copySpan = element.querySelector(".copyBtn");
+            if (copySpan) {
+                const btn = this.#getCopyBtn(details);
+                copySpan.appendChild(btn);
+            }
         }
 
-        notificationHTML = (info, details, type) => {
+        notificationHTML = (info, type) => {
             switch (type) {
                 case "success":
-                    return this.#notificationHTMLSuccess(info, details);
+                    return this.#notificationHTMLSuccess(info);
                 case "warning":
-                    return this.#notificationHTMLWarning(info, details);
+                    return this.#notificationHTMLWarning(info);
                 case "failure":
-                    return this.#notificationHTMLFailure(info, details);
+                    return this.#notificationHTMLFailure(info);
                 default:
                     return null;
             }
         }
 
-        #removeNotification = (element, onClose) => {
+        #removeNotification = (element, onClose, type, details) => {
             element?.classList.add(`${this.twPrefix}opacity-0`, `${this.twPrefix}transition-opacity`);
             setTimeout(() => {
                 element?.remove();
+
+                if (type == "failure") {
+                    console.error(details);
+                }
+
+                if (type == "warning") {
+                    console.warn(details);
+                }
+
                 if (typeof onClose === "function") {
                     onClose();
                 }
@@ -74,7 +109,7 @@ const NotificationManager = (function () {
             return container;
         }
 
-        #notificationHTMLSuccess = (info, details) => {
+        #notificationHTMLSuccess = (info) => {
             return `
             <div class="${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-neutral-50 ${this.twPrefix}shadow-md" role="alert" aria-live="polite" tabindex="0">
                 <div class="${this.twPrefix}bg-green-500 ${this.twPrefix}w-3 ${this.twPrefix}rounded-l-lg"></div>
@@ -86,7 +121,7 @@ const NotificationManager = (function () {
                     </div>
                     <div>
                         <p class="${this.twPrefix}font-sans ${this.twPrefix}font-semibold ${this.twPrefix}text-base">Gespeichert</p>
-                        <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600">${info}</p>
+                        <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600 ${this.twPrefix}flex ${this.twPrefix}items-center">${info}<span class="${this.twPrefix}ml-2 copyBtn"></span></p>
                     </div>
                     <div class="${this.twPrefix}inline-flex ${this.twPrefix}items-center ${this.twPrefix}pl-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="removeBtn ${this.twPrefix}fill-gray-600 ${this.twPrefix}h-3 ${this.twPrefix}w-3 ${this.twPrefix}cursor-pointer">
@@ -97,7 +132,7 @@ const NotificationManager = (function () {
             </div>`;
         }
 
-        #notificationHTMLFailure = (info, details) => {
+        #notificationHTMLFailure = (info) => {
             return `
             <div class="${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-neutral-50 ${this.twPrefix}shadow-md" role="alert" aria-live="polite" tabindex="0">
                 <div class="${this.twPrefix}bg-red-500 ${this.twPrefix}w-3 ${this.twPrefix}rounded-l-lg"></div>
@@ -109,7 +144,7 @@ const NotificationManager = (function () {
                     </div>
                     <div>
                         <p class="${this.twPrefix}font-sans ${this.twPrefix}font-semibold ${this.twPrefix}text-base">Fehler</p>
-                        <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600">${info}</p>
+                         <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600 ${this.twPrefix}flex ${this.twPrefix}items-center">${info}<span class="${this.twPrefix}ml-2 copyBtn"></span></p>
                     </div>
                     <div>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="removeBtn ${this.twPrefix}fill-gray-600 ${this.twPrefix}h-3 ${this.twPrefix}w-3 ${this.twPrefix}cursor-pointer">
@@ -120,7 +155,7 @@ const NotificationManager = (function () {
             </div>`;
         }
 
-        #notificationHTMLWarning = (info, details) => {
+        #notificationHTMLWarning = (info) => {
             return `
             <div class="${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-neutral-50 ${this.twPrefix}shadow-md" role="alert" aria-live="polite" tabindex="0">
                 <div class="${this.twPrefix}bg-orange-500 ${this.twPrefix}w-3 ${this.twPrefix}rounded-l-lg"></div>
@@ -132,7 +167,7 @@ const NotificationManager = (function () {
                     </div>
                     <div>
                         <p class="${this.twPrefix}font-sans ${this.twPrefix}font-semibold ${this.twPrefix}text-base">Fehler</p>
-                        <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600">${info}</p>
+                         <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600 ${this.twPrefix}flex ${this.twPrefix}items-center">${info}<span class="${this.twPrefix}ml-2 copyBtn"></span></p>
                     </div>
                     <div>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="removeBtn ${this.twPrefix}fill-gray-600 ${this.twPrefix}h-3 ${this.twPrefix}w-3 ${this.twPrefix}cursor-pointer">
@@ -141,6 +176,27 @@ const NotificationManager = (function () {
                     </div>
                 </div>
             </div>`;
+        }
+
+        #getCopyBtn = (details) => {
+            if (details == "") {
+                return "";
+            }
+
+            const copyContent = document.createElement("input");
+            copyContent.value = details;
+            copyContent.classList.add(`${this.twPrefix}hidden`);
+
+            const copyBtn = document.createElement("button");
+            copyBtn.className = `${this.twPrefix}border-none ${this.twPrefix}flex ${this.twPrefix}items-center`;
+            copyBtn.addEventListener("click", () => {
+                copyContent.select();
+                copyContent.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(copyContent.value);
+            });
+            copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="9px" height="9px" class="${this.twPrefix}fill-gray-600"><title>content-copy</title><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>`;
+            
+            return copyBtn;
         }
     }
 
@@ -151,6 +207,6 @@ export const setTwPrefix = (twPrefix) => {
     NotificationManager.setTwPrefix(twPrefix);
 }
 
-export const notification = (info, type = "warning", details = "", onClose = () => {}) => {
-    NotificationManager.notify(info, type, details);
+export const notification = (info, type = "warning", details = "", duration = 5000, onClose = () => { }, persistFailure = false) => {
+    NotificationManager.notify(info, type, details, duration, onClose, persistFailure);
 }
