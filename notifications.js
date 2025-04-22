@@ -62,7 +62,9 @@ const NotificationManager = (function () {
             const copySpan = element.querySelector(".copyBtn");
             if (copySpan) {
                 const btn = this.#getCopyBtn(details);
-                copySpan.appendChild(btn);
+                if (btn) {
+                    copySpan.appendChild(btn);
+                }
             }
         }
 
@@ -180,7 +182,7 @@ const NotificationManager = (function () {
 
         #getCopyBtn = (details) => {
             if (details == "") {
-                return "";
+                return null;
             }
 
             const copyContent = document.createElement("input");
