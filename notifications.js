@@ -14,45 +14,69 @@ const NotificationManager = (function () {
             this.twPrefix = twPrefix;
         }
 
-        notify(info, type = "warning", details = "") {
+        notify(info, type, details, onClose) {
             const notification = this.notificationHTML(info, details, type);
 
             if (notification == null) {
                 return;
             }
-        
+
             const template = document.createElement("template");
             template.innerHTML = notification;
-        
+
             const element = template.content.firstElementChild;
-            document.body.appendChild(element);
+            const notificationContainer = this.#getNotificationContainer();
+            notificationContainer.appendChild(element);
         
-            setTimeout(() => {
-                element?.parentElement?.removeChild(element);
-            }, 5000);
-        
+            const removeNotificationHandler = () => {
+                this.#removeNotification(element, onClose);
+            };
+
+            setTimeout(removeNotificationHandler, 5000);
+
             const removeBtn = element.querySelector(".removeBtn");
-            removeBtn.addEventListener("click", () => {
-                element?.parentElement?.removeChild(element);
-            });
+            if (removeBtn) {
+                removeBtn.addEventListener("click", removeNotificationHandler);
+            }
         }
 
         notificationHTML = (info, details, type) => {
             switch (type) {
                 case "success":
-                    return this.notificationHTMLSuccess(info, details);
+                    return this.#notificationHTMLSuccess(info, details);
                 case "warning":
-                    return this.notificationHTMLWarning(info, details);
+                    return this.#notificationHTMLWarning(info, details);
                 case "failure":
-                    return this.notificationHTMLFailure(info, details);
+                    return this.#notificationHTMLFailure(info, details);
                 default:
                     return null;
             }
         }
 
-        notificationHTMLSuccess = (info, details) => {
+        #removeNotification = (element, onClose) => {
+            element?.classList.add(`${this.twPrefix}opacity-0`, `${this.twPrefix}transition-opacity`);
+            setTimeout(() => {
+                element?.remove();
+                if (typeof onClose === "function") {
+                    onClose();
+                }
+            }, 300);
+        }
+
+        #getNotificationContainer = () => {
+            let container = document.querySelector("#notificationContainer");
+            if (!container) {
+                container = document.createElement("div");
+                container.id = "notificationContainer";
+                container.className = `${this.twPrefix}fixed ${this.twPrefix}right-0 ${this.twPrefix}bottom-3 ${this.twPrefix}flex ${this.twPrefix}flex-col-reverse ${this.twPrefix}gap-2 ${this.twPrefix}z-50 ${this.twPrefix}h-3/6 ${this.twPrefix}overflow-y-scroll ${this.twPrefix}py-3 ${this.twPrefix}pr-3`;
+                document.body.appendChild(container);
+            }
+            return container;
+        }
+
+        #notificationHTMLSuccess = (info, details) => {
             return `
-            <div class="${this.twPrefix}fixed ${this.twPrefix}right-3 ${this.twPrefix}bottom-3 ${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-white">
+            <div class="${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-neutral-50 ${this.twPrefix}shadow-md" role="alert" aria-live="polite" tabindex="0">
                 <div class="${this.twPrefix}bg-green-500 ${this.twPrefix}w-3 ${this.twPrefix}rounded-l-lg"></div>
                 <div class="${this.twPrefix}p-2 ${this.twPrefix}flex">
                     <div class="${this.twPrefix}flex ${this.twPrefix}flex-row ${this.twPrefix}items-center ${this.twPrefix}mr-2">
@@ -64,7 +88,7 @@ const NotificationManager = (function () {
                         <p class="${this.twPrefix}font-sans ${this.twPrefix}font-semibold ${this.twPrefix}text-base">Gespeichert</p>
                         <p class="${this.twPrefix}font-sans ${this.twPrefix}text-xs ${this.twPrefix}text-gray-600">${info}</p>
                     </div>
-                    <div>
+                    <div class="${this.twPrefix}inline-flex ${this.twPrefix}items-center ${this.twPrefix}pl-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="removeBtn ${this.twPrefix}fill-gray-600 ${this.twPrefix}h-3 ${this.twPrefix}w-3 ${this.twPrefix}cursor-pointer">
                             <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
                         </svg>
@@ -73,9 +97,9 @@ const NotificationManager = (function () {
             </div>`;
         }
 
-        notificationHTMLFailure = (info, details) => {
+        #notificationHTMLFailure = (info, details) => {
             return `
-            <div class="${this.twPrefix}fixed ${this.twPrefix}right-3 ${this.twPrefix}bottom-3 ${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-white">
+            <div class="${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-neutral-50 ${this.twPrefix}shadow-md" role="alert" aria-live="polite" tabindex="0">
                 <div class="${this.twPrefix}bg-red-500 ${this.twPrefix}w-3 ${this.twPrefix}rounded-l-lg"></div>
                 <div class="${this.twPrefix}p-2 ${this.twPrefix}flex">
                     <div class="${this.twPrefix}flex ${this.twPrefix}flex-row ${this.twPrefix}items-center ${this.twPrefix}mr-2">
@@ -96,9 +120,9 @@ const NotificationManager = (function () {
             </div>`;
         }
 
-        notificationHTMLWarning = (info, details) => {
+        #notificationHTMLWarning = (info, details) => {
             return `
-            <div class="${this.twPrefix}fixed ${this.twPrefix}right-3 ${this.twPrefix}bottom-3 ${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-white">
+            <div class="${this.twPrefix}rounded-lg ${this.twPrefix}flex ${this.twPrefix}bg-neutral-50 ${this.twPrefix}shadow-md" role="alert" aria-live="polite" tabindex="0">
                 <div class="${this.twPrefix}bg-orange-500 ${this.twPrefix}w-3 ${this.twPrefix}rounded-l-lg"></div>
                 <div class="${this.twPrefix}p-2 ${this.twPrefix}flex">
                     <div class="${this.twPrefix}flex ${this.twPrefix}flex-row ${this.twPrefix}items-center ${this.twPrefix}mr-2">
@@ -127,6 +151,6 @@ export const setTwPrefix = (twPrefix) => {
     NotificationManager.setTwPrefix(twPrefix);
 }
 
-export const notification = (info, type = "warning", details = "") => {
-   NotificationManager.notify(info, type, details);
+export const notification = (info, type = "warning", details = "", onClose = () => {}) => {
+    NotificationManager.notify(info, type, details);
 }
