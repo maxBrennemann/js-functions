@@ -34,6 +34,14 @@ const BindingManager = (function () {
             document.querySelectorAll('[data-input]').forEach(el => {
                 this._addInputBinding(el);
             });
+
+            document.querySelectorAll('[data-drop]').forEach(el => {
+                this._addDropBinding(el);
+            });
+
+            document.querySelectorAll('[data-dragover]').forEach(el => {
+                this._addDragoverBinding(el);
+            });
         }
 
         _addBinding(el) {
@@ -95,6 +103,44 @@ const BindingManager = (function () {
             });
 
             this._markAsBound(el, "input");
+        }
+
+        _addDropBinding(el) {
+            if (this._isAlreadyBound(el, "drop")) return;
+
+            const funName = el.dataset.fun
+                ? `drop_${el.dataset.fun}`
+                : `drop_${el.id}`;
+
+            el.addEventListener("drop", e => {
+                const fn = this.fnNames[funName];
+                if (typeof fn === "function") {
+                    fn(e);
+                } else {
+                    console.warn(`Write handler not defined for "${funName}"`);
+                }
+            });
+
+            this._markAsBound(el, "drop");
+        }
+
+        _addDragoverBinding(el) {
+            if (this._isAlreadyBound(el, "dragover")) return;
+
+            const funName = el.dataset.fun
+                ? `dragover_${el.dataset.fun}`
+                : `dragover_${el.id}`;
+
+            el.addEventListener("dragover", e => {
+                const fn = this.fnNames[funName];
+                if (typeof fn === "function") {
+                    fn(e);
+                } else {
+                    console.warn(`Write handler not defined for "${funName}"`);
+                }
+            });
+
+            this._markAsBound(el, "dragover");
         }
 
         _bindToggle() {
