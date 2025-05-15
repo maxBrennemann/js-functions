@@ -113,7 +113,7 @@ const NotificationManager = (function () {
             if (!container) {
                 container = document.createElement("div");
                 container.id = "notificationContainer";
-                container.className = `${this.#twPrefix}fixed ${this.#twPrefix}right-0 ${this.#twPrefix}bottom-3 ${this.#twPrefix}flex ${this.#twPrefix}flex-col-reverse ${this.#twPrefix}gap-2 ${this.#twPrefix}z-50 ${this.#twPrefix}h-3/6 ${this.#twPrefix}overflow-y-scroll ${this.#twPrefix}py-3 ${this.#twPrefix}pr-3`;
+                container.className = `${this.#twPrefix}fixed ${this.#twPrefix}right-0 ${this.#twPrefix}bottom-3 ${this.#twPrefix}flex ${this.#twPrefix}flex-col-reverse ${this.#twPrefix}gap-2 ${this.#twPrefix}z-50 ${this.#twPrefix}h-3/6 ${this.#twPrefix}overflow-y-scroll ${this.#twPrefix}py-3 ${this.#twPrefix}pr-3 scrollbar-hide`;
                 document.body.appendChild(container);
             }
             return container;
