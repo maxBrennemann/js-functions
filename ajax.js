@@ -1,175 +1,105 @@
 export const ajax = {
-	/**
-	 * currently with if else, because the old ajax calles are still used
-	 * 
-	 * @param {*} dataOrUrl 
-	 * @param {*} dataOrNoJSON 
-	 * @returns 
-	 */
-	async post(dataOrUrl, dataOrNoJSON = false) {
-		if (typeof dataOrUrl === 'string') {
-			const url = dataOrUrl;
-			const data = dataOrNoJSON;
-			return this.requestLocation(url, data, "POST");
-		} else if (typeof dataOrUrl === 'object') {
-			const data = dataOrUrl;
-			const noJSON = dataOrNoJSON;
-			return this.request(data, "POST", noJSON);
-		} else {
-			throw new Error("Invalid parameter");
-		}
-	},
+    autoHandleUnauthorized: false,
 
-	async get(url, data = {}) {
-		return this.requestLocation(url, data, "GET");
-	},
+    async post(url, data = {}, jsonBody = true) {
+        return request(url, data, "POST", jsonBody);
+    },
 
-	async put(url, data = {}) {
-		return this.requestLocation(url, data, "PUT");
-	},
+    async get(url, data = {}) {
+        return request(url, data, "GET");
+    },
 
-	async delete(url, data = {}) {
-		return this.requestLocation(url, data, "DELETE");
-	},
+    async put(url, data = {}, jsonBody = true) {
+        return request(url, data, "PUT", jsonBody);
+    },
 
-	async request(data, type, noJSON = false) {
-		data.getReason = data.r;
-		const param = Object.keys(data).map(key => {
-			return `${key}=${encodeURIComponent(data[key])}`;
-		});
-		let response = await makeAsyncCall(type, param.join("&"), "").then(result => {
-			return result;
-		}).catch(() => {
-			return {};
-		});
+    async delete(url, data = {}, jsonBody = true) {
+        return request(url, data, "DELETE", jsonBody);
+    },
 
-		if (noJSON) {
-			return response;
-		}
+    async uploadFiles(files, location, additionalInfo = {}) {
+        if (!files || files.length === 0) {
+            return { success: false, data: null, error: "No files provided", status: null };
+        }
 
-		let json = {};
-		try {
-			json = JSON.parse(response);
-		} catch (e) {
-			return {};
-		}
+        const formData = new FormData();
+        Array.from(files).forEach(file => formData.append("files[]", file));
+        Object.entries(additionalInfo).forEach(([key, value]) => formData.set(key, value));
 
-		return json;
-	},
+        try {
+            const response = await fetch(location, {
+                method: "POST",
+                body: formData
+            });
 
-	async requestLocation(url, data, type) {
-		const param = Object.keys(data).map(key => {
-			return `${key}=${encodeURIComponent(data[key])}`;
-		});
-		let response = await makeAsyncCall(type, param.join("&"), url).then(result => {
-			return result;
-		}).catch(() => {
-			return {};
-		});
+            const json = await tryParseJSON(response);
+            const success = response.ok;
 
-		let json = {};
-		try {
-			json = JSON.parse(response);
-		} catch (e) {
-			return {};
-		}
+            if (!success && response.status === 401 && this.autoHandleUnauthorized) {
+                console.warn("Unauthorized - reloading...");
+                location.reload();
+            }
 
-		return json;
-	},
+            return {
+                success,
+                data: success ? json : null,
+                error: success ? null : json?.error || `HTTP ${response.status}`,
+                status: response.status
+            };
+        } catch (err) {
+            return { success: false, data: null, error: err.message, status: null };
+        }
+    }
+};
 
-	async uploadFiles(files, location, additionalInfo = null) {
-		if (files == null || files.length == 0) {
-			return null;
-		}
+async function request(url, data, method, jsonBody = true) {
+    const options = { method, headers: {} };
 
-		const response = await uploadFilesHelper(files, location, additionalInfo).then(result => {
-			return result;
-		}).catch(() => {
-			return {};
-		});
+    if (method === "GET") {
+        const paramString = buildParams(data);
+        url += paramString ? `?${paramString}` : "";
+    } else if (jsonBody) {
+        options.headers["Content-Type"] = "application/json";
+        options.body = JSON.stringify(data);
+    } else {
+        options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+        options.body = buildParams(data);
+    }
 
-		let json = {};
-		try {
-			json = JSON.parse(response);
-		} catch (e) {
-			return {};
-		}
+    try {
+        const response = await fetch(url, options);
+        const json = await tryParseJSON(response);
+        const success = response.ok;
 
-		return json;
-	}
+        if (!success && response.status === 401 && ajax.autoHandleUnauthorized) {
+            console.warn("Unauthorized - reloading...");
+            location.reload();
+        }
+
+        return {
+            success,
+            data: success ? json : null,
+            error: success ? null : json?.error || `HTTP ${response.status}`,
+            status: response.status
+        };
+    } catch (err) {
+        return { success: false, data: null, error: err.message, status: null };
+    }
 }
 
-/**
- * 
- * @param {*} files
- * @param {*} location
- * @param {*} additionalInfo
- */
-async function uploadFilesHelper(files, location, additionalInfo = null) {
-	let formData = new FormData();
-	Array.from(files).forEach(file => {
-		/* https://stackoverflow.com/questions/65197158/what-does-formdata-appendfiles-file-mean-in-api-request */
-		formData.append("files[]", file);
-	});
-
-	for (let key in additionalInfo) {
-		formData.set(key, additionalInfo[key]);
-	}
-
-	return new Promise((resolve, reject) => {
-		const ajaxCall = new XMLHttpRequest();
-		ajaxCall.onload = function () {
-			if (this.readyState == 4 && this.status == 200) {
-				resolve(this.responseText);
-			} else {
-				reject(new Error(this.responseText));
-			}
-		}
-
-		ajaxCall.onerror = function () {
-			reject(new Error("Network error"));
-		};
-
-		ajaxCall.onerror = reject;
-		ajaxCall.open("POST", location);
-		ajaxCall.send(formData);
-	});
+function buildParams(data) {
+    return Object.entries(data)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join("&");
 }
 
-export async function makeAsyncCall(type, params, location) {
-	return new Promise((resolve, reject) => {
-		const ajaxCall = new XMLHttpRequest();
-		ajaxCall.onload = function () {
-			if (this.readyState == 4 && this.status == 200) {
-				resolve(this.responseText);
-			} else {
-				reject(new Error(this.responseText));
-			}
-		}
+async function tryParseJSON(response) {
+    const text = await response.text();
+    if (!text) return null;
 
-		ajaxCall.onerror = function () {
-			reject(new Error("Network error"));
-		};
-
-		switch (type) {
-			case "POST":
-			case "PUT":
-			case "DELETE":
-				ajaxCall.open(type, location, true);
-				ajaxCall.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-				ajaxCall.send(params);
-				break;
-			case "GET":
-				if (params == "") {
-					ajaxCall.open("GET", `${location}`, true);
-				} else {
-					ajaxCall.open("GET", `${location}?${params}`, true);
-				}
-				ajaxCall.send();
-				break;
-			default:
-				reject(new Error("Ajax Type not defined"));
-				break;
-		}
-	});
+    try {
+        return JSON.parse(text);
+    } catch {
+        return null;
+    }
 }
