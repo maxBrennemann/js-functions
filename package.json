@@ -1,6 +1,6 @@
 {
     "name": "js-classes",
-    "version": "1.0.0",
+    "version": "0.2",
     "description": "Some simple js classes and functions I frequently reuse in projects",
     "repository": {
         "type": "git",
@@ -11,5 +11,6 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Max Brennemann",
-    "license": "LGPL-3.0-or-later"
+    "license": "LGPL-3.0-or-later",
+    "types": "./index.d.ts"
 }
