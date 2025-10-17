@@ -1,5 +1,4 @@
-import { ajax } from "./ajax";
-import { addBindings } from "./bindings";
-
-export * from ajax
-export * from addBindings
+export * from "./ajax";
+export * from "./bindings";
+export * from "./deviceDetector";
+export * from "./notifications";
