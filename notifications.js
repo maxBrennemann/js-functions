@@ -2,9 +2,10 @@ const NotificationManager = (function () {
     let instance;
 
     class NotificationManager {
-        #notificationKeys = new Set();
         #notificationElements = new Map();
         #twPrefix = "";
+        #isPersistant = false;
+        #storageKey = "notifications";
 
         constructor() {
             if (instance) return instance;
@@ -15,10 +16,18 @@ const NotificationManager = (function () {
             this.#twPrefix = twPrefix;
         }
 
+        setPersistance(isPersistant) {
+            this.#isPersistant = isPersistant;
+            if (isPersistant) {
+                this.#loadStoredNotifications();
+            } else {
+                localStorage.removeItem(this.#storageKey);
+            }
+        }
+
         notify(info, type, details, duration, onClose, persist, id) {
-            const key = JSON.stringify({ info, type, details });
-            if (!this.#notificationKeys.has(key)) {
-                this.#notificationKeys.add(key);
+            if (!id) {
+                id = crypto.randomUUID();
             }
 
             const notification = this.notificationHTML(info, type);
@@ -57,8 +66,10 @@ const NotificationManager = (function () {
                 }
             }
 
-            if (id) {
-                this.#notificationElements.set(id, element);
+            this.#notificationElements.set(id, element);
+
+            if (this.#isPersistant) {
+                this.#storeNotification(info, type, details, duration, onClose, persist, id);
             }
         }
 
@@ -89,6 +100,27 @@ const NotificationManager = (function () {
             }
         }
 
+        #storeNotification = (info, type, details, duration, onClose, persist, id) => {
+            const newNotification = {
+                id: id || crypto.randomUUID(),
+                info: info,
+                type: type,
+                details: details,
+                duration: duration,
+                onClose: onClose,
+                persist: persist,
+                id: id,
+            }
+
+            const notifications = JSON.parse(localStorage.getItem(this.#storageKey) || "[]");
+
+            const existingIndex = notifications.findIndex(n => n.id === newNotification.id);
+            if (existingIndex >= 0) notifications[existingIndex] = newNotification;
+            else notifications.push(newNotification);
+
+            localStorage.setItem(this.#storageKey, JSON.stringify(notifications));
+        }
+
         #removeNotification = (element, onClose, type, details) => {
             element?.classList.add(`${this.#twPrefix}opacity-0`, `${this.#twPrefix}transition-opacity`);
             setTimeout(() => {
@@ -106,6 +138,31 @@ const NotificationManager = (function () {
                     onClose();
                 }
             }, 300);
+
+            const id = [...this.#notificationElements.entries()]
+                .find(([_, el]) => el === element)?.[0];
+
+            if (id) this.#removeStoredNotification(id);
+        }
+
+        #removeStoredNotification(id) {
+            const notifications = JSON.parse(localStorage.getItem(this.#storageKey) || "[]");
+            const filtered = notifications.filter(n => n.id !== id);
+            localStorage.setItem(this.#storageKey, JSON.stringify(filtered));
+        }
+
+        #loadStoredNotifications() {
+            const notifications = JSON.parse(localStorage.getItem(this.#storageKey) || "[]");
+            const now = Date.now();
+
+            notifications.forEach(n => {
+                // skip expired auto-dismissable
+                if (!n.persist && n.duration && now - n.timestamp > n.duration) return;
+
+                this.notify(n.info, n.type, n.details, n.duration, () => {
+                    this.#removeStoredNotification(n.id);
+                }, n.persist, n.id);
+            });
         }
 
         #getNotificationContainer = () => {
@@ -134,8 +191,9 @@ const NotificationManager = (function () {
                         <p class="${this.#twPrefix}font-sans ${this.#twPrefix}text-xs ${this.#twPrefix}text-gray-600 ${this.#twPrefix}flex ${this.#twPrefix}items-center">${info}<span class="${this.#twPrefix}ml-2 copyBtn"></span></p>
                     </div>
                     <div class="${this.#twPrefix}inline-flex ${this.#twPrefix}items-center ${this.#twPrefix}pl-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="removeBtn ${this.#twPrefix}fill-gray-600 ${this.#twPrefix}h-3 ${this.#twPrefix}w-3 ${this.#twPrefix}cursor-pointer">
-                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="removeBtn ${this.#twPrefix}fill-gray-600 ${this.#twPrefix}h-3 ${this.#twPrefix}w-3 ${this.#twPrefix}cursor-pointer"  title="Schließen">
+                            <title>Schließen</title>
+                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"  title="Schließen" />
                         </svg>
                     </div>
                 </div>
@@ -243,6 +301,10 @@ export const setTwPrefix = (twPrefix) => {
     NotificationManager.setTwPrefix(twPrefix);
 }
 
+export const setNotificationPersistance = (isPersistant = true) => {
+    NotificationManager.setPersistance(isPersistant);
+}
+
 export const notification = (info, type = "warning", details = "", duration = 5000, onClose = () => { }, persist = false) => {
     NotificationManager.notify(info, type, details, duration, onClose, persist, null);
 }
@@ -251,6 +313,6 @@ export const notificationLoader = (id, info, details, onClose = () => { }) => {
     NotificationManager.notify(info, "loading", details, 0, onClose, true, id);
 }
 
-export const notificatinReplace = (id, info, type, details = "", duration = 5000, onClose = () => {}, persist = false) => {
+export const notificatinReplace = (id, info, type, details = "", duration = 5000, onClose = () => { }, persist = false) => {
     NotificationManager.replace(id, info, type, details, duration, onClose, persist);
 }

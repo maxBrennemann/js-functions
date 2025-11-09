@@ -33,6 +33,8 @@ export declare class NotificationManager {
 
 export declare const setTwPrefix: (twPrefix: string) => void;
 
+export declare const setNotificationPersistance: (isPersistant: boolean) => void;
+
 export declare const notification: (
     info: string,
     type?: NotificationType,
