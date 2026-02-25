@@ -6,6 +6,7 @@ const NotificationManager = (function () {
         #twPrefix = "";
         #isPersistant = false;
         #storageKey = "notifications";
+        #target = document.body;
 
         constructor() {
             if (instance) return instance;
@@ -23,6 +24,10 @@ const NotificationManager = (function () {
             } else {
                 localStorage.removeItem(this.#storageKey);
             }
+        }
+
+        setNotificationContainer(container) {
+            this.#target = container;
         }
 
         notify(info, type, details, duration, onClose, persist, id) {
@@ -171,7 +176,7 @@ const NotificationManager = (function () {
                 container = document.createElement("div");
                 container.id = "notificationContainer";
                 container.className = `${this.#twPrefix}fixed ${this.#twPrefix}right-0 ${this.#twPrefix}bottom-3 ${this.#twPrefix}flex ${this.#twPrefix}flex-col-reverse ${this.#twPrefix}gap-2 ${this.#twPrefix}z-50 ${this.#twPrefix}h-3/6 ${this.#twPrefix}overflow-y-scroll ${this.#twPrefix}py-3 ${this.#twPrefix}pr-3 scrollbar-hide`;
-                document.body.appendChild(container);
+                this.#target.appendChild(container);
             }
             return container;
         }
@@ -303,6 +308,10 @@ export const setTwPrefix = (twPrefix) => {
 
 export const setNotificationPersistance = (isPersistant = true) => {
     NotificationManager.setPersistance(isPersistant);
+}
+
+export const setNotificationContainer = (container) => {
+    NotificationManager.setNotificationContainer(container);
 }
 
 export const notification = (info, type = "warning", details = "", duration = 5000, onClose = () => { }, persist = false) => {
