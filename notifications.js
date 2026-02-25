@@ -171,7 +171,7 @@ const NotificationManager = (function () {
         }
 
         #getNotificationContainer = () => {
-            let container = document.querySelector("#notificationContainer");
+            let container = this.#target.querySelector("#notificationContainer");
             if (!container) {
                 container = document.createElement("div");
                 container.id = "notificationContainer";
