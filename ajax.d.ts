@@ -1,9 +1,16 @@
-export interface AjaxResponse<T = any> {
-    success: boolean;
-    data: T | null;
-    error: string | null;
-    status: number | null;
-}
+export type AjaxResponse<T = any> =
+    | {
+        success: true;
+        data: T;
+        error: null;
+        status: number;
+    }
+    | {
+        success: false;
+        data: null;
+        error: string;
+        status: number | null;
+    };
 
 export interface Ajax {
     autoHandleUnauthorized: boolean;
