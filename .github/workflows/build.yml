@@ -1,0 +1,56 @@
+# Builds the tables TypeScript module and pushes dist/ to the "build" branch.
+# Consumers install from the build branch:
+#   "js-classes": "git+https://github.com/maxBrennemann/js-functions.git#v0.6.0"
+
+name: Build & Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build tables module
+        run: npm run build
+
+      - name: Read package version
+        id: version
+        run: echo "VERSION=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Push to build branch and tag
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions"
+
+          # Stage dist/ (force-add because it's in .gitignore)
+          git checkout -B build
+          git add -f dist/
+          git commit -m "Build from ${GITHUB_SHA::8}" || echo "No changes to commit"
+          git push -f origin build
+
+          # Tag the build branch with the version from package.json
+          # Only creates a new tag if this version doesn't exist yet
+          if ! git rev-parse "${{ steps.version.outputs.VERSION }}" >/dev/null 2>&1; then
+            git tag "${{ steps.version.outputs.VERSION }}"
+            git push origin "${{ steps.version.outputs.VERSION }}"
+            echo "Tagged ${{ steps.version.outputs.VERSION }}"
+          else
+            echo "Tag ${{ steps.version.outputs.VERSION }} already exists, skipping"
+          fi

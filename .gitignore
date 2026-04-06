@@ -1,1 +1,3 @@
 js-collection.code-workspace
+node_modules/
+dist/

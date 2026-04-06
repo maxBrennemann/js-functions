@@ -1,12 +1,51 @@
 {
-    "name": "js-classes",
-    "version": "0.2",
+    "name": "@mbrennemann/js-classes",
+    "version": "0.3",
+    "type": "module",
+    "main": "./index.d.ts",
     "description": "Some simple js classes and functions I frequently reuse in projects",
+    "author": "Max Brennemann",
+    "license": "LGPL-3.0-or-later",
+    "types": "./index.d.ts",
     "repository": {
         "type": "git",
         "url": "https://github.com/maxBrennemann/js-functions.git"
     },
-    "author": "Max Brennemann",
-    "license": "LGPL-3.0-or-later",
-    "types": "./index.d.ts"
+    "exports": {
+        "./*": "./*",
+        "./tables": {
+            "import": {
+                "types": "./dist/tables/index.d.ts",
+                "default": "./dist/tables/index.js"
+            },
+            "require": {
+                "types": "./dist/tables/index.d.cts",
+                "default": "./dist/tables/index.cjs"
+            }
+        }
+    },
+    "files": [
+        "*.js",
+        "*.d.ts",
+        "dist/tables",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "prepublishOnly": "npm run build",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "tsup": "^8.4.0",
+        "typescript": "^5.7.0"
+    },
+    "peerDependencies": {
+        "lucide": ">=0.300.0"
+    },
+    "peerDependenciesMeta": {
+        "lucide": {
+            "optional": true
+        }
+    }
 }
