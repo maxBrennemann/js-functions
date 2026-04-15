@@ -1,7 +1,3 @@
-# Builds the tables TypeScript module and pushes dist/ to the "build" branch.
-# Consumers install from the build branch:
-#   "js-classes": "git+https://github.com/maxBrennemann/js-functions.git#v0.6.0"
-
 name: Build & Publish
 
 on:

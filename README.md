@@ -1,6 +1,8 @@
 # @maxbrennemann/js-functions
 
-Configurable, framework-agnostic HTML table library. Zero dependencies, TypeScript-first.
+Configurable, framework-agnostic JavaScript libarry for ajax handling, table creation and notifications.
+Dependencies: Tailwind and LucideIcons
+Built with TypeScript.
 
 ## Installation
 
