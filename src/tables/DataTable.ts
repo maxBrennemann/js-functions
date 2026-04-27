@@ -28,8 +28,6 @@ import type {
     TableConfig,
     TableRow,
     ColumnDef,
-    ActionDef,
-    SortDirection,
     SummaryFn,
 } from './types';
 
@@ -421,7 +419,13 @@ export class DataTable extends EventEmitter {
     private handleSort(column: string): void {
         this.sortedData = this.sorter.sort(this.data, column);
         const state = this.sorter.getState()!;
-        this.render();
+        // In server-side mode, onSort fires the callback; skip local re-render
+        // (caller is expected to call setData() with fresh results)
+        if (!this.config.onSort) {
+            this.render();
+        } else {
+            this.renderHeader(this.getVisibleColumns()); // update sort indicators only
+        }
         this.emit('sort:change', { column: state.column, direction: state.direction });
     }
 
