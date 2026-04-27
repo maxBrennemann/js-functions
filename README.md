@@ -11,13 +11,13 @@ Built with TypeScript.
 npm install git+https://github.com/maxBrennemann/js-functions.git#v0.1.0
 
 # Or in package.json
-"@maxBrennemann/js-functions": "git+https://github.com/maxBrennemann/js-functions.git#v0.1.0"
+"@maxbrennemann/js-functions": "git+https://github.com/maxBrennemann/js-functions.git#v0.1.0"
 ```
 
 ## Quick Start
 
 ```typescript
-import { DataTable } from '@maxBrennemann/tables/datatable';
+import { DataTable } from '@maxbrennemann/js-functions/tables/datatable';
 
 const table = new DataTable({
     columns: [

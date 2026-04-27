@@ -1,18 +1,78 @@
 {
-    "name": "@mbrennemann/js-classes",
+    "name": "@maxbrennemann/js-functions",
     "version": "0.6",
     "type": "module",
-    "main": "./index.d.ts",
     "description": "Some simple js classes and functions I frequently reuse in projects",
     "author": "Max Brennemann",
     "license": "LGPL-3.0-or-later",
-    "types": "./index.d.ts",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
     "repository": {
         "type": "git",
         "url": "https://github.com/maxBrennemann/js-functions.git"
     },
     "exports": {
-        "./*": "./*",
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        },
+        "./ajax": {
+            "import": {
+                "types": "./dist/ajax.d.ts",
+                "default": "./dist/ajax.js"
+            },
+            "require": {
+                "types": "./dist/ajax.d.cts",
+                "default": "./dist/ajax.cjs"
+            }
+        },
+        "./bindings": {
+            "import": {
+                "types": "./dist/bindings.d.ts",
+                "default": "./dist/bindings.js"
+            },
+            "require": {
+                "types": "./dist/bindings.d.cts",
+                "default": "./dist/bindings.cjs"
+            }
+        },
+        "./deviceDetector": {
+            "import": {
+                "types": "./dist/deviceDetector.d.ts",
+                "default": "./dist/deviceDetector.js"
+            },
+            "require": {
+                "types": "./dist/deviceDetector.d.cts",
+                "default": "./dist/deviceDetector.cjs"
+            }
+        },
+        "./notifications": {
+            "import": {
+                "types": "./dist/notifications.d.ts",
+                "default": "./dist/notifications.js"
+            },
+            "require": {
+                "types": "./dist/notifications.d.cts",
+                "default": "./dist/notifications.cjs"
+            }
+        },
+        "./functions": {
+            "import": {
+                "types": "./dist/functions.d.ts",
+                "default": "./dist/functions.js"
+            },
+            "require": {
+                "types": "./dist/functions.d.cts",
+                "default": "./dist/functions.cjs"
+            }
+        },
         "./tables": {
             "import": {
                 "types": "./dist/tables/index.d.ts",
@@ -25,16 +85,15 @@
         }
     },
     "files": [
-        "*.js",
-        "*.d.ts",
-        "dist/tables",
+        "dist",
         "README.md"
     ],
     "scripts": {
         "build": "tsup",
         "dev": "tsup --watch",
         "prepublishOnly": "npm run build",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "prepare": "npm run build"
     },
     "devDependencies": {
         "tsup": "^8.4.0",
