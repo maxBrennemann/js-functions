@@ -1,6 +1,6 @@
 {
     "name": "@maxbrennemann/js-functions",
-    "version": "0.6",
+    "version": "0.7",
     "type": "module",
     "description": "Some simple js classes and functions I frequently reuse in projects",
     "author": "Max Brennemann",
